@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
 
 import firebase_admin
 from firebase_admin import credentials, firestore
+
+from app.core.config import settings
 
 
 class FirebaseClient:
@@ -9,20 +12,44 @@ class FirebaseClient:
 
     @classmethod
     def initialize(cls):
-
-        # Si Firebase ya fue inicializado no volver a hacerlo
         if firebase_admin._apps:
             cls._db = firestore.client()
             return
 
-        credential_path = (
-            Path(__file__).resolve().parents[2] / "credentials" / "firebase-admin.json"
-        )
-
-        cred = credentials.Certificate(str(credential_path))
+        if (
+            settings.FIREBASE_PROJECT_ID
+            and settings.FIREBASE_PRIVATE_KEY
+            and settings.FIREBASE_CLIENT_EMAIL
+        ):
+            private_key = settings.FIREBASE_PRIVATE_KEY.replace("\\n", "\n")
+            firebase_cred = {
+                "type": "service_account",
+                "project_id": settings.FIREBASE_PROJECT_ID,
+                "private_key_id": settings.FIREBASE_PRIVATE_KEY_ID,
+                "private_key": private_key,
+                "client_email": settings.FIREBASE_CLIENT_EMAIL,
+                "client_id": settings.FIREBASE_CLIENT_ID,
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": (
+                    "https://www.googleapis.com/robot/v1/metadata/x509/"
+                    + settings.FIREBASE_CLIENT_EMAIL.replace("@", "%40")
+                ),
+            }
+            cred = credentials.Certificate(firebase_cred)
+        else:
+            credential_path = (
+                Path(__file__).resolve().parents[2] / "credentials" / "firebase-admin.json"
+            )
+            if not credential_path.exists():
+                raise FileNotFoundError(
+                    "No se encontró Firebase credentials. Define FIREBASE_PROJECT_ID, "
+                    "FIREBASE_PRIVATE_KEY y FIREBASE_CLIENT_EMAIL o monta credentials/firebase-admin.json"
+                )
+            cred = credentials.Certificate(str(credential_path))
 
         firebase_admin.initialize_app(cred)
-
         cls._db = firestore.client()
 
     @classmethod
