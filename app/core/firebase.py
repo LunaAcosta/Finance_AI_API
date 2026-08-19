@@ -21,7 +21,14 @@ class FirebaseClient:
             and settings.FIREBASE_PRIVATE_KEY
             and settings.FIREBASE_CLIENT_EMAIL
         ):
-            private_key = settings.FIREBASE_PRIVATE_KEY.replace("\\n", "\n")
+            private_key = settings.FIREBASE_PRIVATE_KEY.strip().replace("\\n", "\n")
+
+            if not private_key.startswith("-----BEGIN") or "PRIVATE KEY-----" not in private_key:
+                raise ValueError(
+                    "FIREBASE_PRIVATE_KEY no tiene el formato PEM válido de Firebase. "
+                    "Debe incluir el bloque '-----BEGIN PRIVATE KEY-----' con saltos de línea reales o escapados."
+                )
+
             firebase_cred = {
                 "type": "service_account",
                 "project_id": settings.FIREBASE_PROJECT_ID,

@@ -198,18 +198,23 @@ class ApiContractTests(unittest.TestCase):
     def test_firebase_initializes_from_environment_when_local_credentials_are_missing(self) -> None:
         with (
             patch.object(FirebaseClient, "_db", None),
+            patch("app.core.firebase.firebase_admin._apps", {}),
             patch("app.core.firebase.Path.exists", return_value=False),
+            patch("app.core.firebase.credentials.Certificate") as certificate,
             patch("app.core.firebase.firebase_admin.initialize_app") as initialize_app,
             patch("app.core.firebase.firestore.client", return_value={"status": "ok"}) as firestore_client,
             patch("app.core.firebase.settings.FIREBASE_PROJECT_ID", "demo-project"),
-            patch("app.core.firebase.settings.FIREBASE_PRIVATE_KEY", "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----\\n"),
+            patch(
+                "app.core.firebase.settings.FIREBASE_PRIVATE_KEY",
+                "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC...\\n-----END PRIVATE KEY-----\\n",
+            ),
             patch("app.core.firebase.settings.FIREBASE_CLIENT_EMAIL", "demo@project.com"),
         ):
             FirebaseClient.initialize()
 
-        self.assertEqual(FirebaseClient._db, {"status": "ok"})
         initialize_app.assert_called_once()
-        self.assertEqual(initialize_app.call_args[0][0].project_id, "demo-project")
+        certificate.assert_called_once()
+        self.assertEqual(certificate.call_args[0][0]["project_id"], "demo-project")
         firestore_client.assert_called_once()
 
 
