@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import firebase_admin
@@ -36,13 +35,6 @@ class FirebaseClient:
                 "private_key": private_key,
                 "client_email": settings.FIREBASE_CLIENT_EMAIL,
                 "client_id": settings.FIREBASE_CLIENT_ID,
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": (
-                    "https://www.googleapis.com/robot/v1/metadata/x509/"
-                    + settings.FIREBASE_CLIENT_EMAIL.replace("@", "%40")
-                ),
             }
             cred = credentials.Certificate(firebase_cred)
         else:
